@@ -105,8 +105,8 @@ define(["glm", "glh"], function(glm, glh) {
         glm.perspective(
             /* fovy= */ glm.radians(30),
             /* aspect= */ 4./3,
-            /* zNear= */ .1,
-            /* zFar= */ 50);
+            /* zNear= */ 10,
+            /* zFar= */ 30);
     const mvpMatrix = projMatrix['*'](viewMatrix['*'](modelMatrix));
     
     gl.useProgram(program);
