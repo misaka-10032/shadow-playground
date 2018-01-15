@@ -7,7 +7,7 @@ varying vec4 vRGBx;
 
 void main() {
   gl_Position = uMVP * aPos;
-  vRGBx = (aPos + vec4(1)) * .5;
+  vRGBx = (aPos + vec4(1)) * .4 + .2;
 }
 
 `;
@@ -39,6 +39,19 @@ const kCubePositions = [
 ];
 const kCubePositionDim = 4;
 const kCubePositionCount = kCubePositions.length / kCubePositionDim;
+
+const kFloorPositions = [
+  -4, -1.2, -4, 1,
+  +4, -1.2, -4, 1,
+  +4, -1.0, -4, 1,
+  -4, -1.0, -4, 1, 
+  -4, -1.2, +4, 1,
+  +4, -1.2, +4, 1,
+  +4, -1.0, +4, 1,
+  -4, -1.0, +4, 1,
+]
+const kFloorPositionDim = 4;
+const kFloorPositionCount = kFloorPositionDim.length / kFloorPositionDim;
 
 const kCubeIndices = [
   0, 2, 1,
@@ -74,14 +87,15 @@ define(["glm", "glh"], function(glm, glh) {
     const program = glh.initShaderProgram(gl, kCubeVertexShader, kCubeFragmentShader);
     const positionLocation = gl.getAttribLocation(program, "aPos");
     const mvpLocation = gl.getUniformLocation(program, "uMVP");
-    const positionBuffer = glh.createFloatVertexBuffer(gl, kCubePositions);
+    const cubePositionBuffer = glh.createFloatVertexBuffer(gl, kCubePositions);
+    const floorPositionBuffer = glh.createFloatVertexBuffer(gl, kFloorPositions);
     const indexBuffer = glh.createShortIndexBuffer(gl, kCubeIndices);
     
-    const center = glm.vec3(0, 0, 6);
+    const center = glm.vec3(0, 0, 16);
     const modelMatrix =
         glm.rotate(
             glm.translate(glm.mat4(1), center),
-            /* angle= */ glm.radians(30),
+            /* angle= */ glm.radians(20),
             /* axis= */ glm.vec3(-1, -1, 0));
     const viewMatrix =
         glm.lookAt(
@@ -89,7 +103,7 @@ define(["glm", "glh"], function(glm, glh) {
             /* up= */ glm.vec3(0, 1, 0));
     const projMatrix =
         glm.perspective(
-            /* fovy= */ glm.radians(60),
+            /* fovy= */ glm.radians(30),
             /* aspect= */ 4./3,
             /* zNear= */ .1,
             /* zFar= */ 50);
@@ -98,12 +112,20 @@ define(["glm", "glh"], function(glm, glh) {
     gl.useProgram(program);
     gl.enableVertexAttribArray(positionLocation);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    // Draw cube.
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubePositionBuffer);
     gl.vertexAttribPointer(
-      positionLocation, kCubePositionDim, gl.FLOAT, /* normalize= */ false,
-      kDefaultStride, kDefaultOffset);
+        positionLocation, kCubePositionDim, gl.FLOAT, /* normalize= */ false,
+        kDefaultStride, kDefaultOffset);
     gl.uniformMatrix4fv(mvpLocation, /* transpose= */ false, mvpMatrix.elements);   
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.drawElements(gl.TRIANGLES, kCubeIndexCount, gl.UNSIGNED_SHORT, kDefaultOffset);
+    
+    // Draw floor.
+    gl.bindBuffer(gl.ARRAY_BUFFER, floorPositionBuffer);
+    gl.vertexAttribPointer(
+        positionLocation, kFloorPositionDim, gl.FLOAT, /* normalize= */ false,
+        kDefaultStride, kDefaultOffset);
     gl.drawElements(gl.TRIANGLES, kCubeIndexCount, gl.UNSIGNED_SHORT, kDefaultOffset);
     
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
