@@ -94,7 +94,7 @@ define(["glm", "glh"], function(glm, glh) {
             /* axis= */ glm.vec3(-1, -1, 0));
     const viewMatrix =
         glm.lookAt(
-            /* eye= */ glm.vec3(0, 0, 0), center,
+            /* eye= */ glm.vec3(0, 10, 26), center,
             /* up= */ glm.vec3(0, 1, 0));
     const projMatrix =
         glm.perspective(
