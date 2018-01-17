@@ -3,6 +3,7 @@ define([], function() {
     initShaderProgram: initShaderProgram,
     createFloatVertexBuffer: createFloatVertexBuffer,
     createShortIndexBuffer: createShortIndexBuffer,
+    createTexture: createTexture,
   };
   
   //
@@ -42,6 +43,19 @@ define([], function() {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(data), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     return buffer;
+  }
+  
+  function createTexture(gl, width, height, data) {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(
+      gl.TEXTURE_2D, /* level= */ 0, /* internalFormat= */ gl.RGBA, width, height,
+      /* border= */ 0, /* format= */ gl.RGBA, /* type= */ gl.UNSIGNED_BYTE, data);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    return texture;
   }
   
   //
