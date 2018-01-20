@@ -140,7 +140,7 @@ define(["glm", "glh"], function(glm, glh) {
     const lightProjMatrix = cameraProjMatrix;
     const lightMvpMatrix = lightProjMatrix['*'](lightViewMatrix['*'](modelMatrix));
     
-    function drawPass(pass) {
+    function drawPass(pass) {      
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.useProgram(pass.program);
       gl.enableVertexAttribArray(pass.positionLocation);
@@ -194,15 +194,16 @@ define(["glm", "glh"], function(glm, glh) {
       indexBuffer: glh.createShortIndexBuffer(gl, kCubeIndices),
     };
     self.depthPass.draw = function() {
-      const texure =
+      const texture =
           glh.createTexture(gl, self.canvas.width, self.canvas.height, /* data= */ null);
-      const fb = gl.createFramebuffer();
+      const rb =
+          glh.createRenderbuffer(gl, self.canvas.width, self.canvas.height);
+      const fb =
+          glh.createFramebuffer(gl, texture, rb);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-      gl.framebufferTexture2D(
-          gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texure, /* level= */ 0);
       drawPass(self.depthPass);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return texure;
+      return texture;
     };
     
     const shadowProgram = glh.initShaderProgram(gl, kShadowVertexShader, kShadowFragmentShader);

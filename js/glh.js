@@ -4,6 +4,8 @@ define([], function() {
     createFloatVertexBuffer: createFloatVertexBuffer,
     createShortIndexBuffer: createShortIndexBuffer,
     createTexture: createTexture,
+    createRenderbuffer: createRenderbuffer,
+    createFramebuffer: createFramebuffer,
   };
   
   //
@@ -56,6 +58,29 @@ define([], function() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.bindTexture(gl.TEXTURE_2D, null);
     return texture;
+  }
+  
+  function createRenderbuffer(gl, width, height) {
+    const renderbuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    return renderbuffer;
+  }
+  
+  function createFramebuffer(gl, texture, renderbuffer) {
+    const framebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, /* level= */ 0);
+    gl.framebufferRenderbuffer(
+        gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
+      console.error("Unable to create framebuffer!");
+      return null;
+    }
+    return framebuffer;
   }
   
   //
