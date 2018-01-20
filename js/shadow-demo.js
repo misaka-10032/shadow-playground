@@ -183,7 +183,7 @@ define(["glm", "glh"], function(glm, glh) {
       gl.useProgram(null);
     }
     
-    const depthProgram = glh.initShaderProgram(gl, kDepthVertexShader, kDepthFragmentShader);
+    const depthProgram = glh.createShaderProgram(gl, kDepthVertexShader, kDepthFragmentShader);
     self.depthPass = {
       program: depthProgram,
       positionLocation: gl.getAttribLocation(depthProgram, "aPos"),
@@ -206,7 +206,7 @@ define(["glm", "glh"], function(glm, glh) {
       return texture;
     };
     
-    const shadowProgram = glh.initShaderProgram(gl, kShadowVertexShader, kShadowFragmentShader);
+    const shadowProgram = glh.createShaderProgram(gl, kShadowVertexShader, kShadowFragmentShader);
     self.shadowPass = {
       program: shadowProgram,
       positionLocation: gl.getAttribLocation(shadowProgram, "aPos"),

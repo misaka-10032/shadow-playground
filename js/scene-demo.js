@@ -84,7 +84,7 @@ define(["glm", "glh"], function(glm, glh) {
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     
-    const program = glh.initShaderProgram(gl, kCubeVertexShader, kCubeFragmentShader);
+    const program = glh.createShaderProgram(gl, kCubeVertexShader, kCubeFragmentShader);
     const positionLocation = gl.getAttribLocation(program, "aPos");
     const mvpLocation = gl.getUniformLocation(program, "uMVP");
     const cubePositionBuffer = glh.createFloatVertexBuffer(gl, kCubePositions);

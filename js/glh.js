@@ -1,6 +1,6 @@
 define([], function() {
   return {
-    initShaderProgram: initShaderProgram,
+    createShaderProgram: createShaderProgram,
     createFloatVertexBuffer: createFloatVertexBuffer,
     createShortIndexBuffer: createShortIndexBuffer,
     createTexture: createTexture,
@@ -11,9 +11,9 @@ define([], function() {
   //
   // Initialize a shader program, so WebGL knows how to draw our data.
   //
-  function initShaderProgram(gl, vsSource, fsSource) {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  function createShaderProgram(gl, vsSource, fsSource) {
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
     const shaderProgram = gl.createProgram();
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
@@ -64,7 +64,7 @@ define([], function() {
     const renderbuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
     gl.renderbufferStorage(
-        gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+    gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     return renderbuffer;
   }
@@ -88,7 +88,7 @@ define([], function() {
   // Creates a shader of the given type, uploads the source and
   // compiles it.
   //
-  function loadShader(gl, type, source) {
+  function createShader(gl, type, source) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
