@@ -63,7 +63,8 @@ define([], function() {
   function createRenderbuffer(gl, width, height) {
     const renderbuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+    gl.renderbufferStorage(
+        gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     return renderbuffer;
   }

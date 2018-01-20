@@ -35,8 +35,7 @@ varying vec4 vLightCoord;
 
 void main() {
   vec4 pos = vec4(aPos, 1);
-  // gl_Position = uCameraMVP * pos;
-  gl_Position = uLightMVP * pos;
+  gl_Position = uCameraMVP * pos;
   vRGBx = (pos + vec4(1)) * .4 + .2;
   vLightCoord = kBias * uLightMVP * pos;
 }
@@ -47,14 +46,20 @@ const kShadowFragmentShader = `
 
 precision mediump float;
 
+const float kEps = 5e-3;
+
 uniform sampler2D uDepthMap;
 varying vec4 vRGBx;
 varying vec4 vLightCoord;
 
 void main() {
-  vec2 lightCoord = vLightCoord.xy / vLightCoord.w;
-  gl_FragColor = vec4(texture2D(uDepthMap, lightCoord).zzz, 1);
-  // gl_FragColor = vec4(vRGBx.xyz, 1);
+  vec4 lightCoord = vLightCoord / vLightCoord.w;
+  float fragmentLightDist = lightCoord.z;
+  float occluderLightDist = texture2D(uDepthMap, lightCoord.xy).z;
+  float visibility =
+      fragmentLightDist > occluderLightDist + kEps ?
+      0.5 : 1.;
+  gl_FragColor = vec4(visibility, 0, 0, 1);
 }
 
 `;
