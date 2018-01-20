@@ -21,15 +21,24 @@ void main() {
 
 const kShadowVertexShader = `
 
+const mat4 kBias = mat4(
+    vec4(0.5, 0.0, 0.0, 0.0),
+    vec4(0.0, 0.5, 0.0, 0.0),
+    vec4(0.0, 0.0, 0.5, 0.0),
+    vec4(0.5, 0.5, 0.5, 1.0));
+
 attribute vec3 aPos;
 uniform mat4 uCameraMVP;
 uniform mat4 uLightMVP;
 varying vec4 vRGBx;
+varying vec4 vLightCoord;
 
 void main() {
   vec4 pos = vec4(aPos, 1);
-  gl_Position = uCameraMVP * pos;
+  // gl_Position = uCameraMVP * pos;
+  gl_Position = uLightMVP * pos;
   vRGBx = (pos + vec4(1)) * .4 + .2;
+  vLightCoord = kBias * uLightMVP * pos;
 }
 
 `;
@@ -40,9 +49,16 @@ precision mediump float;
 
 uniform sampler2D uDepthMap;
 varying vec4 vRGBx;
+varying vec4 vLightCoord;
 
 void main() {
-  gl_FragColor = vec4(vRGBx.xyz, 1);
+  vec2 lightCoord = vLightCoord.xy / vLightCoord.w;
+  float z = texture2D(uDepthMap, lightCoord).z;
+  // gl_FragColor = vec4(z, z, z, 1);
+  // gl_FragColor = vec4(lightCoord, 0, 1);
+  gl_FragColor = vec4(vLightCoord.zzz / vLightCoord.w, 1);
+  // gl_FragColor = vec4(texture2D(uDepthMap, lightCoord).zzz, 1);
+  // gl_FragColor = vec4(vRGBx.xyz, 1);
 }
 
 `;
@@ -125,35 +141,42 @@ define(["glm", "glh"], function(glm, glh) {
     const lightMvpMatrix = lightProjMatrix['*'](lightViewMatrix['*'](modelMatrix));
     
     function drawPass(pass) {
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.useProgram(pass.program);
       gl.enableVertexAttribArray(pass.positionLocation);
 
+      if (pass.cameraMvpLocation != null) {
+        gl.uniformMatrix4fv(
+            pass.cameraMvpLocation, /* transpose= */ false, pass.cameraMvpMatrix.elements);
+      }
+      if (pass.lightMvpLocation != null) {
+        gl.uniformMatrix4fv(
+            pass.lightMvpLocation, /* transpose= */ false, pass.lightMvpMatrix.elements);
+      }
+      if (pass.depthMapLocation != null) {
+        const textureUnit = 0;
+        gl.activeTexture(gl.TEXTURE0 + textureUnit);
+        gl.bindTexture(gl.TEXTURE_2D, pass.depthMapTexture);
+        gl.uniform1i(pass.depthMapLocation, textureUnit);
+      }
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pass.indexBuffer);
+      
+      // Draw floor.
+      // TODO
+//      gl.bindBuffer(gl.ARRAY_BUFFER, pass.floorPositionBuffer);
+//      gl.vertexAttribPointer(
+//          pass.positionLocation, kFloorPositionDim, gl.FLOAT, /* normalize= */ false,
+//          kDefaultStride, kDefaultOffset);
+//      gl.drawElements(gl.TRIANGLES, kCubeIndexCount, gl.UNSIGNED_SHORT, kDefaultOffset);
+      
       // Draw cube.
       gl.bindBuffer(gl.ARRAY_BUFFER, pass.cubePositionBuffer);
       gl.vertexAttribPointer(
           pass.positionLocation, kCubePositionDim, gl.FLOAT, /* normalize= */ false,
           kDefaultStride, kDefaultOffset);
-      if (pass.cameraMvpLocation) {
-        gl.uniformMatrix4fv(
-            pass.cameraMvpLocation, /* transpose= */ false, pass.cameraMvpMatrix.elements);
-      }
-      if (pass.lightMvpLocation) {
-        gl.uniformMatrix4fv(
-            pass.lightMvpLocation, /* transpose= */ false, pass.lightMvpMatrix.elements);
-      }
-      if (pass.depthMapLocation) {
-        // TODO
-      }
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pass.indexBuffer);
       gl.drawElements(gl.TRIANGLES, kCubeIndexCount, gl.UNSIGNED_SHORT, kDefaultOffset);
-
-      // Draw floor.
-      gl.bindBuffer(gl.ARRAY_BUFFER, pass.floorPositionBuffer);
-      gl.vertexAttribPointer(
-          pass.positionLocation, kFloorPositionDim, gl.FLOAT, /* normalize= */ false,
-          kDefaultStride, kDefaultOffset);
-      gl.drawElements(gl.TRIANGLES, kCubeIndexCount, gl.UNSIGNED_SHORT, kDefaultOffset);
-
+      
+      gl.bindTexture(gl.TEXTURE_2D, null);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
       gl.disableVertexAttribArray(pass.positionLocation);
@@ -171,15 +194,15 @@ define(["glm", "glh"], function(glm, glh) {
       indexBuffer: glh.createShortIndexBuffer(gl, kCubeIndices),
     };
     self.depthPass.draw = function() {
-      const tex =
+      const texure =
           glh.createTexture(gl, self.canvas.width, self.canvas.height, /* data= */ null);
       const fb = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       gl.framebufferTexture2D(
-          gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, /* level= */ 0);
+          gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texure, /* level= */ 0);
       drawPass(self.depthPass);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return fb;
+      return texure;
     };
     
     const shadowProgram = glh.initShaderProgram(gl, kShadowVertexShader, kShadowFragmentShader);
@@ -193,10 +216,11 @@ define(["glm", "glh"], function(glm, glh) {
       floorPositionBuffer: glh.createFloatVertexBuffer(gl, kFloorPositions),
       cameraMvpMatrix: cameraMvpMatrix,
       lightMvpMatrix: lightMvpMatrix,
-      depthMapTexture: null, // TODO
+      depthMapTexture: null,
       indexBuffer: glh.createShortIndexBuffer(gl, kCubeIndices),
     };
-    self.shadowPass.draw = function(fb) {
+    self.shadowPass.draw = function(texture) {
+      self.shadowPass.depthMapTexture = texture;
       drawPass(self.shadowPass);
     };
   }
@@ -205,14 +229,47 @@ define(["glm", "glh"], function(glm, glh) {
     this.canvas = document.querySelector("#".concat(config.canvasId));
     this.canvas.onresize = () => onResize();
     const gl = this.canvas.getContext("webgl");
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(0.8, 0.9, 0.8, 1);
     gl.clearDepth(1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
     initPasses(this, gl);
-    fb = this.depthPass.draw();
-    this.shadowPass.draw(fb);
+    const texture = this.depthPass.draw();
+    // TODO
+    // this.shadowPass.draw(texture);
+    
+    var _vertices = [-1, -1, -1, 1, 1, 1, 1, -1];
+    var _indices = [0, 1, 2, 0, 2, 3];
+    var _vbuffer = glh.createFloatVertexBuffer(gl, _vertices);
+    var _ibuffer = glh.createShortIndexBuffer(gl, _indices);
+    var _vshader = `
+      attribute vec2 aPos;
+      void main() {
+        gl_Position = vec4(aPos, 0, 1);
+      }`;
+    var _fshader = `
+      precision mediump float;
+      uniform sampler2D uTex;
+      void main() {
+        //gl_FragColor = vec4(1, 0, 0, 1);
+        vec2 uv = gl_FragCoord.xy / vec2(400, 300);
+        gl_FragColor = texture2D(uTex, uv);
+      }`;
+    var _program = glh.initShaderProgram(gl, _vshader, _fshader);
+    var _posLocation = gl.getAttribLocation(_program, "aPos");
+    var _texLocation = gl.getUniformLocation(_program, "uTex");
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.useProgram(_program);
+    gl.enableVertexAttribArray(_posLocation);
+    const _textureUnit = 1;
+    gl.activeTexture(gl.TEXTURE0 + _textureUnit);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform1i(_texLocation, _textureUnit);
+    gl.bindBuffer(gl.ARRAY_BUFFER, _vbuffer);
+    gl.vertexAttribPointer(
+        _posLocation, /* dim= */ 2, gl.FLOAT, /* normalize= */ false,
+        kDefaultStride, kDefaultOffset);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, _ibuffer);
+    gl.drawElements(gl.TRIANGLES, _indices.length, gl.UNSIGNED_SHORT, kDefaultOffset);
   }
   
   function onResize() {
