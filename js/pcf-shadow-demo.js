@@ -49,19 +49,33 @@ void main() {
 const kShadowFragmentShader = `#version 300 es
 
 precision mediump float;
-precision lowp sampler2DShadow;
 
-const float kEps = 5e-3;
+const float kEps = 1.125e-2;
 
-uniform sampler2DShadow uDepthMap;
+uniform sampler2D uDepthMap;
+uniform vec2 uDepthMapScale;
 in vec4 vRGBx;
 in vec4 vLightCoord;
 out vec4 fragColor;
 
+float weight(float x, float y) {
+  return abs(x) < 1. && abs(y) < 1. ?
+      (.6 / 4.) : (.4 / 12.);
+}
+
 void main() {
   vec4 lightCoord = vLightCoord / vLightCoord.w;
-  float visibility = texture(uDepthMap, lightCoord.xyz);
-  fragColor = vec4(visibility, 0, 0, 1);
+  float fragLightDist = lightCoord.z;
+  float x, y, visibility = 0.;
+  for (y = -1.5; y <= 1.5; y += 1.) {
+    for (x = -1.5; x <= 1.5; x += 1.) {
+      float occluderLightDist =
+          texture(uDepthMap, lightCoord.xy + uDepthMapScale * vec2(x, y)).z;
+      visibility +=
+          weight(x, y) * float(fragLightDist < occluderLightDist + kEps);
+    }
+  }
+  fragColor = vec4(.5 + .5 * visibility, 0, 0, 1);
 }
 
 `;
@@ -168,6 +182,7 @@ define(["glm", "glh"], function(glm, glh) {
         gl.activeTexture(gl.TEXTURE0 + textureUnit);
         gl.bindTexture(gl.TEXTURE_2D, pass.depthMapTexture);
         gl.uniform1i(pass.depthMapLocation, textureUnit);
+        gl.uniform2fv(pass.depthMapScaleLocation, pass.depthMapScale.elements);
       }
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pass.indexBuffer);
       
@@ -204,9 +219,9 @@ define(["glm", "glh"], function(glm, glh) {
     };
     self.depthPass.draw = function() {
       const texture =
-          glh.createTexture(gl, self.canvas.width, self.canvas.height, /* data= */ null);
+          glh.createTexture(gl, self.depthMapWidth, self.depthMapHeight, /* data= */ null);
       const rb =
-          glh.createRenderbuffer(gl, self.canvas.width, self.canvas.height);
+          glh.createRenderbuffer(gl, self.depthMapWidth, self.depthMapHeight);
       const fb =
           glh.createFramebuffer(gl, texture, rb);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
@@ -222,11 +237,13 @@ define(["glm", "glh"], function(glm, glh) {
       cameraMvpLocation: gl.getUniformLocation(shadowProgram, "uCameraMVP"),
       lightMvpLocation: gl.getUniformLocation(shadowProgram, "uLightMVP"),
       depthMapLocation: gl.getUniformLocation(shadowProgram, "uDepthMap"),
+      depthMapScaleLocation: gl.getUniformLocation(shadowProgram, "uDepthMapScale"),
       cubePositionBuffer: glh.createFloatVertexBuffer(gl, kCubePositions),
       floorPositionBuffer: glh.createFloatVertexBuffer(gl, kFloorPositions),
       cameraMvpMatrix: cameraMvpMatrix,
       lightMvpMatrix: lightMvpMatrix,
       depthMapTexture: null,
+      depthMapScale: glm.vec2(1./self.depthMapWidth, 1./self.depthMapHeight),
       indexBuffer: glh.createShortIndexBuffer(gl, kCubeIndices),
     };
     self.shadowPass.draw = function(texture) {
@@ -238,6 +255,8 @@ define(["glm", "glh"], function(glm, glh) {
   function onStart(config) {
     this.canvas = document.querySelector("#".concat(config.canvasId));
     this.canvas.onresize = () => onResize();
+    this.depthMapWidth = this.canvas.width;
+    this.depthMapHeight = this.canvas.height;
     const gl = this.canvas.getContext("webgl2");
     gl.clearColor(0.8, 0.9, 0.8, 1);
     gl.clearDepth(1);
