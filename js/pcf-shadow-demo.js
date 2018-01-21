@@ -1,5 +1,3 @@
-// TODO: Shadow looks weird.
-
 const kDepthVertexShader = `#version 300 es
 
 uniform mat4 uLightMVP;
@@ -138,7 +136,7 @@ define(["glm", "glh"], function(glm, glh) {
                 glm.translate(glm.mat4(1), center),
                 /* angle= */ glm.radians(20),
                 /* axis= */ glm.vec3(-1, 0, 0)),
-            /* angle= */ glm.radians(50),
+            /* angle= */ glm.radians(20),
             /* axis= */ glm.vec3(0, -1, 0));
     const aspect = self.canvas.width / self.canvas.height;
 
@@ -161,7 +159,7 @@ define(["glm", "glh"], function(glm, glh) {
         glm.perspective(
             /* fovy= */ glm.radians(30), aspect,
             /* zNear= */ 10,
-            /* zFar= */ 20);
+            /* zFar= */ 30);
     const lightMvpMatrix = lightProjMatrix['*'](lightViewMatrix['*'](modelMatrix));
     
     function drawPass(pass) {      

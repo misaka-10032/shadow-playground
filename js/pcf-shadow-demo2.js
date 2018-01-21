@@ -1,7 +1,7 @@
-const kDepthVertexShader = `
+const kDepthVertexShader = `#version 300 es
 
-attribute vec3 aPos;
 uniform mat4 uLightMVP;
+in vec3 aPos;
 
 void main() {
   gl_Position = uLightMVP * vec4(aPos, 1);
@@ -9,17 +9,19 @@ void main() {
 
 `;
 
-const kDepthFragmentShader = `
+const kDepthFragmentShader = `#version 300 es
 
 precision mediump float;
 
+out vec4 fragColor;
+
 void main() {
-  gl_FragColor = vec4(gl_FragCoord.zzz, 1);
+  fragColor = vec4(gl_FragCoord.zzz, 1);
 }
 
 `;
 
-const kShadowVertexShader = `
+const kShadowVertexShader = `#version 300 es
 
 const mat4 kBias = mat4(
     vec4(0.5, 0.0, 0.0, 0.0),
@@ -27,11 +29,11 @@ const mat4 kBias = mat4(
     vec4(0.0, 0.0, 0.5, 0.0),
     vec4(0.5, 0.5, 0.5, 1.0));
 
-attribute vec3 aPos;
 uniform mat4 uCameraMVP;
 uniform mat4 uLightMVP;
-varying vec4 vRGBx;
-varying vec4 vLightCoord;
+in vec3 aPos;
+out vec4 vRGBx;
+out vec4 vLightCoord;
 
 void main() {
   vec4 pos = vec4(aPos, 1);
@@ -42,24 +44,37 @@ void main() {
 
 `;
 
-const kShadowFragmentShader = `
+const kShadowFragmentShader = `#version 300 es
 
 precision mediump float;
 
-const float kEps = 5e-3;
+const float kEps = 1.125e-2;
 
 uniform sampler2D uDepthMap;
-varying vec4 vRGBx;
-varying vec4 vLightCoord;
+uniform vec2 uDepthMapScale;
+in vec4 vRGBx;
+in vec4 vLightCoord;
+out vec4 fragColor;
+
+float weight(float x, float y) {
+  return abs(x) < 1. && abs(y) < 1. ?
+      (.6 / 4.) : (.4 / 12.);
+}
 
 void main() {
   vec4 lightCoord = vLightCoord / vLightCoord.w;
-  float fragmentLightDist = lightCoord.z;
-  float occluderLightDist = texture2D(uDepthMap, lightCoord.xy).z;
-  float visibility =
-      fragmentLightDist > occluderLightDist + kEps ?
-      0.5 : 1.;
-  gl_FragColor = vec4(visibility, 0, 0, 1);
+  float fragLightDist = lightCoord.z;
+  float x, y, visibility = 0.;
+  for (y = -1.5; y <= 1.5; y += 1.) {
+    for (x = -1.5; x <= 1.5; x += 1.) {
+      float occluderLightDist =
+          texture(uDepthMap, lightCoord.xy + uDepthMapScale * vec2(x, y)).z;
+      float diff = occluderLightDist + kEps - fragLightDist;
+      float sigmoid = 1. / (1. + exp(-diff * 1e3));
+      visibility += weight(x, y) * sigmoid;
+    }
+  }
+  fragColor = vec4(.5 + .5 * visibility, 0, 0, 1);
 }
 
 `;
@@ -124,6 +139,7 @@ define(["glm", "glh"], function(glm, glh) {
                 /* axis= */ glm.vec3(-1, 0, 0)),
             /* angle= */ glm.radians(20),
             /* axis= */ glm.vec3(0, -1, 0));
+    const aspect = self.canvas.width / self.canvas.height;
 
     const cameraViewMatrix =
         glm.lookAt(
@@ -131,8 +147,7 @@ define(["glm", "glh"], function(glm, glh) {
             /* up= */ glm.vec3(0, 1, 0));
     const cameraProjMatrix =
         glm.perspective(
-            /* fovy= */ glm.radians(30),
-            /* aspect= */ 4./3,
+            /* fovy= */ glm.radians(30), aspect,
             /* zNear= */ 10,
             /* zFar= */ 30);
     const cameraMvpMatrix = cameraProjMatrix['*'](cameraViewMatrix['*'](modelMatrix));
@@ -141,7 +156,11 @@ define(["glm", "glh"], function(glm, glh) {
         glm.lookAt(
             /* eye= */ glm.vec3(0, 10, 26), center,
             /* up= */ glm.vec3(0, 1, 0));
-    const lightProjMatrix = cameraProjMatrix;
+    const lightProjMatrix =
+        glm.perspective(
+            /* fovy= */ glm.radians(30), aspect,
+            /* zNear= */ 10,
+            /* zFar= */ 30);
     const lightMvpMatrix = lightProjMatrix['*'](lightViewMatrix['*'](modelMatrix));
     
     function drawPass(pass) {      
@@ -162,6 +181,7 @@ define(["glm", "glh"], function(glm, glh) {
         gl.activeTexture(gl.TEXTURE0 + textureUnit);
         gl.bindTexture(gl.TEXTURE_2D, pass.depthMapTexture);
         gl.uniform1i(pass.depthMapLocation, textureUnit);
+        gl.uniform2fv(pass.depthMapScaleLocation, pass.depthMapScale.elements);
       }
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pass.indexBuffer);
       
@@ -198,9 +218,9 @@ define(["glm", "glh"], function(glm, glh) {
     };
     self.depthPass.draw = function() {
       const texture =
-          glh.createTexture(gl, self.canvas.width, self.canvas.height, /* data= */ null);
+          glh.createTexture(gl, self.depthMapWidth, self.depthMapHeight, /* data= */ null);
       const rb =
-          glh.createRenderbuffer(gl, self.canvas.width, self.canvas.height);
+          glh.createRenderbuffer(gl, self.depthMapWidth, self.depthMapHeight);
       const fb =
           glh.createFramebuffer(gl, texture, rb);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
@@ -216,11 +236,13 @@ define(["glm", "glh"], function(glm, glh) {
       cameraMvpLocation: gl.getUniformLocation(shadowProgram, "uCameraMVP"),
       lightMvpLocation: gl.getUniformLocation(shadowProgram, "uLightMVP"),
       depthMapLocation: gl.getUniformLocation(shadowProgram, "uDepthMap"),
+      depthMapScaleLocation: gl.getUniformLocation(shadowProgram, "uDepthMapScale"),
       cubePositionBuffer: glh.createFloatVertexBuffer(gl, kCubePositions),
       floorPositionBuffer: glh.createFloatVertexBuffer(gl, kFloorPositions),
       cameraMvpMatrix: cameraMvpMatrix,
       lightMvpMatrix: lightMvpMatrix,
       depthMapTexture: null,
+      depthMapScale: glm.vec2(1./self.depthMapWidth, 1./self.depthMapHeight),
       indexBuffer: glh.createShortIndexBuffer(gl, kCubeIndices),
     };
     self.shadowPass.draw = function(texture) {
@@ -232,7 +254,9 @@ define(["glm", "glh"], function(glm, glh) {
   function onStart(config) {
     this.canvas = document.querySelector("#".concat(config.canvasId));
     this.canvas.onresize = () => onResize();
-    const gl = this.canvas.getContext("webgl");
+    this.depthMapWidth = this.canvas.width;
+    this.depthMapHeight = this.canvas.height;
+    const gl = this.canvas.getContext("webgl2");
     gl.clearColor(0.8, 0.9, 0.8, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);
