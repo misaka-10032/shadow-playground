@@ -67,8 +67,8 @@ void main() {
     for (x = -1.5; x <= 1.5; x += 1.) {
       vec4 occluderSample =
           texture(uDepthMap, lightCoord.xy + uDepthMapScale * vec2(x, y));
-      mu += kWeight * occluderSample.z;
-      sigma2 += kWeight * occluderSample.y;
+      mu += kWeight * occluderSample.b;
+      sigma2 += kWeight * occluderSample.g;
     }
   }
   sigma2 -= mu * mu;
@@ -256,7 +256,7 @@ define(["glm", "glh"], function(glm, glh) {
     this.canvas.onresize = () => onResize();
     this.depthMapWidth = this.canvas.width;
     this.depthMapHeight = this.canvas.height;
-    const gl = this.canvas.getContext("webgl2");
+    const gl = glh.getContext(this.canvas);
     gl.clearColor(0.8, 0.9, 0.8, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);

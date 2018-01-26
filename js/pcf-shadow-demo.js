@@ -255,7 +255,7 @@ define(["glm", "glh"], function(glm, glh) {
     this.canvas.onresize = () => onResize();
     this.depthMapWidth = this.canvas.width;
     this.depthMapHeight = this.canvas.height;
-    const gl = this.canvas.getContext("webgl2");
+    const gl = glh.getContext(this.canvas);
     gl.clearColor(0.8, 0.9, 0.8, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);

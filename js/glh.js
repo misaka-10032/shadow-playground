@@ -1,5 +1,6 @@
 define([], function() {
   return {
+    getContext: getContext,
     createShaderProgram: createShaderProgram,
     createFloatVertexBuffer: createFloatVertexBuffer,
     createShortIndexBuffer: createShortIndexBuffer,
@@ -7,6 +8,17 @@ define([], function() {
     createRenderbuffer: createRenderbuffer,
     createFramebuffer: createFramebuffer,
   };
+  
+  function getContext(canvas) {
+    const gl = canvas.getContext("webgl2");
+    if (!gl.getExtension('OES_texture_float_linear')) {
+      console.error('Unable to get ext: OES_texture_float_linear');
+    }
+    if (!gl.getExtension('EXT_color_buffer_float')) {
+      console.error('Unable to get ext: EXT_color_buffer_float');
+    }
+    return gl;
+  }
   
   //
   // Initialize a shader program, so WebGL knows how to draw our data.
@@ -51,8 +63,8 @@ define([], function() {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(
-      gl.TEXTURE_2D, /* level= */ 0, /* internalFormat= */ gl.RGBA, width, height,
-      /* border= */ 0, /* format= */ gl.RGBA, /* type= */ gl.UNSIGNED_BYTE, data);
+      gl.TEXTURE_2D, /* level= */ 0, /* internalFormat= */ gl.RGBA32F, width, height,
+      /* border= */ 0, /* format= */ gl.RGBA, /* type= */ gl.FLOAT, data);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
