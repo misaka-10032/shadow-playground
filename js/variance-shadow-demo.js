@@ -67,11 +67,11 @@ void main() {
     for (x = -1.5; x <= 1.5; x += 1.) {
       vec4 occluderSample =
           texture(uDepthMap, lightCoord.xy + uDepthMapScale * vec2(x, y));
-      mu += kWeight * occluderSample.b;
-      sigma2 += kWeight * occluderSample.g;
+      mu += kWeight * occluderSample.z;
+      sigma2 += kWeight * occluderSample.y;
     }
   }
-  sigma2 -= mu * mu;
+  sigma2 = clamp(sigma2 - mu * mu, 1e-4, 1e4);
   float fragOccluderDist = fragLightDist - mu;
   float visibility = sigma2 / (sigma2 + fragOccluderDist * fragOccluderDist);
   fragColor = vec4(.5 + .5 * visibility, 0, 0, 1);
