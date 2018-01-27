@@ -104,7 +104,7 @@ const kFloorPositions = [
   +4, -1.2, +4,
   +4, -1.0, +4,
   -4, -1.0, +4,
-]
+];
 const kFloorPositionDim = 3;
 const kFloorPositionCount = kFloorPositionDim.length / kFloorPositionDim;
 

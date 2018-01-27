@@ -75,8 +75,7 @@ define([], function() {
   function createRenderbuffer(gl, width, height) {
     const renderbuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    gl.renderbufferStorage(
-    gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT32F, width, height);
     gl.bindRenderbuffer(gl.RENDERBUFFER, null);
     return renderbuffer;
   }
@@ -89,7 +88,7 @@ define([], function() {
     gl.framebufferRenderbuffer(
         gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
       console.error("Unable to create framebuffer!");
       return null;
     }
