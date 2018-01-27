@@ -72,7 +72,7 @@ define(["glm", "glh"], function(glm, glh) {
   function onStart(config) {
     var canvas = document.querySelector("#".concat(config.canvasId));
     canvas.onresize = () => onResize(canvas);
-    const gl = canvas.getContext("webgl");
+    const gl = glh.getContext(canvas);
     gl.clearColor(0, 0, 0, 1);
     gl.clearDepth(1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

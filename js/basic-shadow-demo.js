@@ -232,7 +232,7 @@ define(["glm", "glh"], function(glm, glh) {
   function onStart(config) {
     this.canvas = document.querySelector("#".concat(config.canvasId));
     this.canvas.onresize = () => onResize();
-    const gl = this.canvas.getContext("webgl");
+    const gl = glh.getContext(this.canvas);
     gl.clearColor(0.8, 0.9, 0.8, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);

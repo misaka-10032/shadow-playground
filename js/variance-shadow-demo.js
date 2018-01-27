@@ -16,7 +16,8 @@ precision mediump float;
 out vec4 fragColor;
 
 void main() {
-  fragColor = vec4(gl_FragCoord.zzz, 1);
+  float z = gl_FragCoord.z;
+  fragColor = vec4(z*z*z, z*z, z, 1);
 }
 
 `;
@@ -49,6 +50,7 @@ const kShadowFragmentShader = `#version 300 es
 precision mediump float;
 
 const float kEps = 1.125e-2;
+const float kWeight = 1./16.;
 
 uniform sampler2D uDepthMap;
 uniform vec2 uDepthMapScale;
@@ -56,23 +58,22 @@ in vec4 vRGBx;
 in vec4 vLightCoord;
 out vec4 fragColor;
 
-float weight(float x, float y) {
-  return abs(x) < 1. && abs(y) < 1. ?
-      (.6 / 4.) : (.4 / 12.);
-}
-
 void main() {
   vec4 lightCoord = vLightCoord / vLightCoord.w;
   float fragLightDist = lightCoord.z;
-  float x, y, visibility = 0.;
+  float x, y, mu = 0., sigma2 = 0.;
+  // TODO: Convolution could be pre-computed.
   for (y = -1.5; y <= 1.5; y += 1.) {
     for (x = -1.5; x <= 1.5; x += 1.) {
-      float occluderLightDist =
-          texture(uDepthMap, lightCoord.xy + uDepthMapScale * vec2(x, y)).z;
-      visibility +=
-          weight(x, y) * float(fragLightDist < occluderLightDist + kEps);
+      vec4 occluderSample =
+          texture(uDepthMap, lightCoord.xy + uDepthMapScale * vec2(x, y));
+      mu += kWeight * occluderSample.z;
+      sigma2 += kWeight * occluderSample.y;
     }
   }
+  sigma2 = clamp(sigma2 - mu * mu, 1e-4, 1e4);
+  float fragOccluderDist = fragLightDist - mu;
+  float visibility = sigma2 / (sigma2 + fragOccluderDist * fragOccluderDist);
   fragColor = vec4(.5 + .5 * visibility, 0, 0, 1);
 }
 
