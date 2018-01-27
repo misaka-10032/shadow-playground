@@ -92,7 +92,6 @@ const kCubePositions = [
   -1, +1, +1,
 ];
 const kCubePositionDim = 3;
-const kCubePositionCount = kCubePositions.length / kCubePositionDim;
 
 const kFloorPositions = [
   -4, -1.2, -4,
@@ -103,9 +102,8 @@ const kFloorPositions = [
   +4, -1.2, +4,
   +4, -1.0, +4,
   -4, -1.0, +4,
-]
+];
 const kFloorPositionDim = 3;
-const kFloorPositionCount = kFloorPositionDim.length / kFloorPositionDim;
 
 const kCubeIndices = [
   0, 2, 1,
@@ -153,7 +151,7 @@ define(["glm", "glh"], function(glm, glh) {
 
     const lightViewMatrix =
         glm.lookAt(
-            /* eye= */ glm.vec3(0, 10, 26), center,
+            /* eye= */ glm.vec3(0, 10, 30), center,
             /* up= */ glm.vec3(0, 1, 0));
     const lightProjMatrix =
         glm.perspective(
