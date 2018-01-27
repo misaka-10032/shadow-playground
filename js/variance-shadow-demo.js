@@ -128,7 +128,7 @@ define(["glm", "glh"], function(glm, glh) {
   };
     
   function initPasses(self, gl) {
-    const center = glm.vec3(0, 0, 16);
+    const center = glm.vec3(0, 0, 18);
     const modelMatrix =
         glm.rotate(
             glm.rotate(
