@@ -126,8 +126,8 @@ define(["glm", "glh", "cube-scene"], function(glm, glh, scene) {
     };
     shadowPass.draw = function(textureWrapper) {
       shadowPass.depthMapTexture = textureWrapper.texture;
-      shadowPass.depthMapWidth = textureWrapper.width;
-      shadowPass.depthMapHeight = textureWrapper.height;
+      shadowPass.depthMapScale =
+          glm.vec2(1./textureWrapper.width, 1./textureWrapper.height);
       scene.drawPass(canvas, shadowPass);
     };
     return shadowPass;

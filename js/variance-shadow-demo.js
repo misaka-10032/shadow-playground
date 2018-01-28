@@ -102,15 +102,22 @@ define(["glm", "glh", "cube-scene"], function(glm, glh, scene) {
           glh.createRenderbuffer(gl, width, height);
       const fb =
           glh.createFramebuffer(gl, texture, rb);
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       scene.drawPass(canvas, depthPass);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+
       return {
         texture: texture,
         width: width,
         height: height,
       };
     };
+
     return depthPass;
   }
 
@@ -126,8 +133,8 @@ define(["glm", "glh", "cube-scene"], function(glm, glh, scene) {
     };
     shadowPass.draw = function(textureWrapper) {
       shadowPass.depthMapTexture = textureWrapper.texture;
-      shadowPass.depthMapWidth = textureWrapper.width;
-      shadowPass.depthMapHeight = textureWrapper.height;
+      shadowPass.depthMapScale =
+          glm.vec2(1./textureWrapper.width, 1./textureWrapper.height);
       scene.drawPass(canvas, shadowPass);
     };
     return shadowPass;

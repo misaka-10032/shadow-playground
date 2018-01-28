@@ -115,8 +115,9 @@ define(["glm", "glh"], function(glm, glh) {
       gl.activeTexture(gl.TEXTURE0 + textureUnit);
       gl.bindTexture(gl.TEXTURE_2D, pass.depthMapTexture);
       gl.uniform1i(pass.depthMapLocation, textureUnit);
-      const depthMapScale = glm.vec2(1./pass.depthMapWidth, 1./pass.depthMapHeight);
-      gl.uniform2fv(pass.depthMapScaleLocation, depthMapScale.elements);
+    }
+    if (pass.depthMapScaleLocation != null) {
+      gl.uniform2fv(pass.depthMapScaleLocation, pass.depthMapScale.elements);
     }
 
     // Both objects share the same index buffer.
