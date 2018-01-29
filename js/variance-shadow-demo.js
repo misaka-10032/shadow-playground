@@ -94,16 +94,23 @@ uniform sampler2D uDepthMap;
 in vec4 vLightCoord;
 out vec4 fragColor;
 
+float computeVisibility(vec4 depthMapSample, float fragLightDist) {
+  float mu = depthMapSample.w;
+  if (mu > fragLightDist) {
+    return 1.;
+  }
+  float mu2 = mu * mu;
+  float sigma2 = clamp(depthMapSample.z - mu2, 1e-8, 1e8);
+  float fragOccluderDist = fragLightDist - mu;
+  float fragOccluderDist2 = fragOccluderDist * fragOccluderDist;
+  return sigma2 / (sigma2 + fragOccluderDist2);
+}
+
 void main() {
   vec4 lightCoord = vLightCoord / vLightCoord.w;
   float fragLightDist = lightCoord.z;
   vec4 depthMapSample = texture(uDepthMap, lightCoord.xy);
-  float mu = depthMapSample.w;
-  float mu2 = mu * mu;
-  float sigma2 = clamp(depthMapSample.z - mu2, 1e-4, 1e4);
-  float fragOccluderDist = fragLightDist - mu;
-  float fragOccluderDist2 = fragOccluderDist * fragOccluderDist;
-  float visibility = sigma2 / (sigma2 + fragOccluderDist2);
+  float visibility = computeVisibility(depthMapSample, fragLightDist);
   fragColor = vec4(.5 + .5 * visibility, 0, 0, 1);
 }
 
