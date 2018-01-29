@@ -1,47 +1,47 @@
-const kDefaultStride = 0;
-const kDefaultOffset = 0;
-
-const kCubePositions = [
-  -1, -1, -1,
-  +1, -1, -1,
-  +1, +1, -1,
-  -1, +1, -1,
-  -1, -1, +1,
-  +1, -1, +1,
-  +1, +1, +1,
-  -1, +1, +1,
-];
-const kCubePositionDim = 3;
-
-const kFloorPositions = [
-  -4, -1.2, -4,
-  +4, -1.2, -4,
-  +4, -1.0, -4,
-  -4, -1.0, -4,
-  -4, -1.2, +4,
-  +4, -1.2, +4,
-  +4, -1.0, +4,
-  -4, -1.0, +4,
-];
-const kFloorPositionDim = 3;
-
-const kCubeIndices = [
-  0, 2, 1,
-  0, 3, 2,
-  4, 5, 6,
-  4, 6, 7,
-  0, 5, 4,
-  0, 1, 5,
-  1, 6, 5,
-  1, 2, 6,
-  2, 7, 6,
-  2, 3, 7,
-  3, 4, 7,
-  3, 0, 4,
-];
-const kCubeIndexCount = kCubeIndices.length;
-
 define(["glm", "glh"], function(glm, glh) {
+
+  const kDefaultStride = 0;
+  const kDefaultOffset = 0;
+
+  const kCubePositions = [
+    -1, -1, -1,
+    +1, -1, -1,
+    +1, +1, -1,
+    -1, +1, -1,
+    -1, -1, +1,
+    +1, -1, +1,
+    +1, +1, +1,
+    -1, +1, +1,
+  ];
+  const kCubePositionDim = 3;
+
+  const kFloorPositions = [
+    -4, -1.2, -4,
+    +4, -1.2, -4,
+    +4, -1.0, -4,
+    -4, -1.0, -4,
+    -4, -1.2, +4,
+    +4, -1.2, +4,
+    +4, -1.0, +4,
+    -4, -1.0, +4,
+  ];
+  const kFloorPositionDim = 3;
+
+  const kCubeIndices = [
+    0, 2, 1,
+    0, 3, 2,
+    4, 5, 6,
+    4, 6, 7,
+    0, 5, 4,
+    0, 1, 5,
+    1, 6, 5,
+    1, 2, 6,
+    2, 7, 6,
+    2, 3, 7,
+    3, 4, 7,
+    3, 0, 4,
+  ];
+  const kCubeIndexCount = kCubeIndices.length;
 
   function initScene(canvas) {
     const aspectRatio = canvas.width / canvas.height;
@@ -94,6 +94,7 @@ define(["glm", "glh"], function(glm, glh) {
    *   depthMapLocation
    *   depthMapScaleLocation
    *   depthMapTexture
+   *   depthMapScale
    */
   function drawPass(canvas, pass) {
     const scene = initScene(canvas);
@@ -102,6 +103,7 @@ define(["glm", "glh"], function(glm, glh) {
     gl.useProgram(pass.program);
     gl.enableVertexAttribArray(pass.positionLocation);
 
+    // Bind optional parameters.
     if (pass.cameraMvpLocation != null) {
       gl.uniformMatrix4fv(
           pass.cameraMvpLocation, /* transpose= */ false, scene.cameraMvpMatrix.elements);
@@ -140,9 +142,14 @@ define(["glm", "glh"], function(glm, glh) {
         kDefaultStride, kDefaultOffset);
     gl.drawElements(gl.TRIANGLES, kCubeIndexCount, gl.UNSIGNED_SHORT, kDefaultOffset);
 
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    // Reset.
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    if (pass.depthMapLocation != null) {
+      const textureUnit = 0;
+      gl.activeTexture(gl.TEXTURE0 + textureUnit);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
     gl.disableVertexAttribArray(pass.positionLocation);
     gl.useProgram(null);
   }

@@ -92,16 +92,18 @@ define(["glm", "glh", "cube-scene"], function(glm, glh, scene) {
     };
     depthPass.draw = function(width, height) {
       if (width == null && height == null) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
         scene.drawPass(canvas, depthPass);
         return;
       }
       const texture =
           glh.createTexture(gl, width, height, /* data= */ null);
-      const rb =
+      const renderbuffer =
           glh.createRenderbuffer(gl, width, height);
-      const fb =
-          glh.createFramebuffer(gl, texture, rb);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      const framebuffer =
+          glh.createFramebuffer(gl, texture, renderbuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+      gl.viewport(0, 0, width, height);
       scene.drawPass(canvas, depthPass);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       return {
@@ -127,6 +129,7 @@ define(["glm", "glh", "cube-scene"], function(glm, glh, scene) {
       shadowPass.depthMapTexture = textureWrapper.texture;
       shadowPass.depthMapScale =
           glm.vec2(1./textureWrapper.width, 1./textureWrapper.height);
+      gl.viewport(0, 0, canvas.width, canvas.height);
       scene.drawPass(canvas, shadowPass);
     };
     return shadowPass;
@@ -144,7 +147,7 @@ define(["glm", "glh", "cube-scene"], function(glm, glh, scene) {
     const depthPass = initDepthPass(canvas, gl);
     const shadowPass = initShadowPass(canvas, gl);
 
-    const textureWrapper = depthPass.draw(canvas.width, canvas.height);
+    const textureWrapper = depthPass.draw(canvas.width * 2, canvas.height * 2);
     shadowPass.draw(textureWrapper);
   }
   
