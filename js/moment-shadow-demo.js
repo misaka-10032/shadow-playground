@@ -95,8 +95,8 @@ in vec4 vLightCoord;
 out vec4 fragColor;
 
 float computeVisibility(vec4 depthMapSample, float fragLightDist) {
-  float alpha = 3e-5;
-  vec4 b = (1. - alpha) * depthMapSample + alpha * vec4(.5, .5, .5, .5);
+  float alpha = 9e-3;
+  vec4 b = (1. - alpha) * depthMapSample + alpha * vec4(0., .63, 0, .63);
   mat3 B = mat3(
       1.0, b.x, b.y,
       b.x, b.y, b.z,
@@ -121,7 +121,7 @@ void main() {
   float fragLightDist = lightCoord.z;
   vec4 depthMapSample = texture(uDepthMap, lightCoord.xy);
   float visibility = computeVisibility(depthMapSample, fragLightDist);
-  fragColor = vec4(.5 + .5 * visibility, 0, 0, 1);
+  fragColor = vec4(.4 + .6 * visibility, 0, 0, 1);
 }
 
 `;
