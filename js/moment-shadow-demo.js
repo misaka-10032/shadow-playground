@@ -11,13 +11,13 @@ void main() {
 
 const kDepthFragmentShader = `#version 300 es
 
-precision mediump float;
+precision highp float;
 
 out vec4 fragColor;
 
 void main() {
   float z = gl_FragCoord.z;
-  fragColor = vec4(z, z*z, 0, 1);
+  fragColor = vec4(z, z*z, z*z*z, z*z*z*z);
 }
 
 `;
@@ -37,7 +37,7 @@ void main() {
 
 const kConvFragmentShader = `#version 300 es
 
-precision mediump float;
+precision highp float;
 
 const float[] kWeights = float[](
   0.045, 0.122, 0.045,
@@ -88,22 +88,32 @@ void main() {
 
 const kShadowFragmentShader = `#version 300 es
 
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uDepthMap;
 in vec4 vLightCoord;
 out vec4 fragColor;
 
 float computeVisibility(vec4 depthMapSample, float fragLightDist) {
-  float mu = depthMapSample.x;
-  if (mu > fragLightDist) {
+  float alpha = 3e-5;
+  vec4 b = (1. - alpha) * depthMapSample + alpha * vec4(.5, .5, .5, .5);
+  mat3 B = mat3(
+      1.0, b.x, b.y,
+      b.x, b.y, b.z,
+      b.y, b.z, b.w);
+  float zf = fragLightDist;
+  vec3 z = vec3(1, zf, zf * zf);
+  vec3 c = inverse(B) * z;
+  float sqrtDelta = sqrt(c.y * c.y - 4. * c.z * c.x);
+  float d1 = (-c.y - sqrtDelta) / (2. * c.z);
+  float d2 = (-c.y + sqrtDelta) / (2. * c.z);
+  if (zf <= d1) {
     return 1.;
+  } else if (zf <= d2) {
+    return 1. - (zf * d2 - b.x * (zf + d2) + b.y) / ((d2 - d1) * (zf - d1));
+  } else {
+    return (d1 * d2 - b.x * (d1 + d2) + b.y) / ((zf - d1) * (zf - d2));
   }
-  float mu2 = mu * mu;
-  float sigma2 = clamp(depthMapSample.y - mu2, 1e-8, 1e8);
-  float fragOccluderDist = fragLightDist - mu;
-  float fragOccluderDist2 = fragOccluderDist * fragOccluderDist;
-  return sigma2 / (sigma2 + fragOccluderDist2);
 }
 
 void main() {
