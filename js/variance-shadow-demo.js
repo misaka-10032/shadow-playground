@@ -188,10 +188,11 @@ define(["glm", "glh", "cube-scene", "paper-scene"], function(glm, glh, cubeScene
       paperScene.drawPass(canvas, convPass);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      // TODO: How to do it right?
+      // gl.bindTexture(gl.TEXTURE_2D, texture);
+      // gl.generateMipmap(gl.TEXTURE_2D);
+      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      // gl.bindTexture(gl.TEXTURE_2D, null);
 
       return texture;
     };
