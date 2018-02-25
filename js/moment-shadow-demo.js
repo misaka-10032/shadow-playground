@@ -107,6 +107,11 @@ float computeVisibility(vec4 depthMapSample, float fragLightDist) {
   float sqrtDelta = sqrt(c.y * c.y - 4. * c.z * c.x);
   float d1 = (-c.y - sqrtDelta) / (2. * c.z);
   float d2 = (-c.y + sqrtDelta) / (2. * c.z);
+  if (d2 < d1) {
+    float tmp = d1;
+    d1 = d2;
+    d2 = tmp;
+  }
   if (zf <= d1) {
     return 1.;
   } else if (zf <= d2) {
